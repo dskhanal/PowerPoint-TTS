@@ -1,10 +1,13 @@
-import { KokoroTTS } from 'kokoro-js';
-import { env } from '@huggingface/transformers';
+import { AutoTokenizer, StyleTextToSpeech2Model, env } from '@huggingface/transformers';
+import { LocalKokoro } from './local-kokoro.js';
+import { kokoroDirectory } from './voice-models.js';
 import { configureWasm } from './wasm.js';
 import { renderNarration } from './render.js';
 import { narrationPlan } from './script-delivery.js';
 
-env.allowLocalModels = false;
+env.allowLocalModels = true;
+env.allowRemoteModels = false;
+env.localModelPath = new URL(import.meta.env.BASE_URL + 'models/', self.location.origin).href;
 configureWasm(env);
 let kokoroEngine;
 let australianEngine;
@@ -25,7 +28,7 @@ async function loadEngine(voice) {
   }
   if (!kokoroEngine) {
     progress('Loading the local voice engine. The first use downloads the speech model.');
-    kokoroEngine = await KokoroTTS.from_pretrained('onnx-community/Kokoro-82M-v1.0-ONNX', {
+    const model = StyleTextToSpeech2Model.from_pretrained(kokoroDirectory, {
       dtype: 'q8', device: 'wasm',
       progress_callback(event) {
         if (event.status === 'progress' && event.file.endsWith('.onnx') && event.total > 0) {
@@ -33,6 +36,8 @@ async function loadEngine(voice) {
         }
       }
     });
+    const tokenizer = AutoTokenizer.from_pretrained(kokoroDirectory);
+    kokoroEngine = new LocalKokoro(...await Promise.all([model, tokenizer]));
   }
   return kokoroEngine;
 }

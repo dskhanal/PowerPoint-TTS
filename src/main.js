@@ -1,6 +1,6 @@
 import { australianVoices } from './australian-voices.js';
 import { icon } from './icons.js';
-import { defaultVariation, validVariation, edgeSilence, narrationPlan, phraseSpeed } from './script-delivery.js';
+import { defaultVariation, validVariation, blankScript, scriptLimit, withDefaultPauses, narrationPlan, phraseSpeed } from './script-delivery.js';
 import { captionsFile, clock } from './audio.js';
 import { delivery, expressionControls } from './expression.js';
 import { setupRecorder } from './recording.js';
@@ -98,18 +98,19 @@ function updateVariation() {
 for (const id of ['volume-variation', 'repeat-words', 'slow-phrases']) $(id).onchange = updateVariation;
 $('shuffle-delivery').onclick = () => {
   variationSeed = crypto.getRandomValues(new Uint32Array(1))[0];
+  rememberVoiceSettings();
   count();
   status('New variation selected. Preview or generate to hear it.');
 };
 
 function count() {
   const text = $('text').value;
-  $('counter').textContent = text.length.toLocaleString('en-AU') + ' / 6,000';
+  $('counter').textContent = text.length.toLocaleString('en-AU') + ' / ' + scriptLimit.toLocaleString('en-AU');
   const { emotion, intensity } = expression.settings();
   const baseSpeed = Number($('speed').value) * delivery(emotion, intensity).pace;
   try {
-    const plan = text.trim() ? narrationPlan(text, false, variationSettings()) : [];
-    let seconds = plan.length ? 2 * edgeSilence : 0;
+    const plan = text.trim() && text !== blankScript ? narrationPlan(text, false, variationSettings()) : [];
+    let seconds = 0;
     for (const part of plan) {
       seconds += part.pause ?? part.text.split(/\s+/).length / (2.5 * phraseSpeed(baseSpeed, part));
     }
@@ -118,12 +119,21 @@ function count() {
     $('estimate').textContent = '— sec';
   }
 }
+function setEditorScript(script) {
+  const input = $('text');
+  input.value = script;
+  if (script === blankScript) {
+    const middle = script.indexOf('\n') + 1;
+    input.setSelectionRange(middle, middle);
+  }
+}
 function replaceScript(text) {
-  if (text.length > $('text').maxLength) {
-    status('This script exceeds 6,000 characters. Import a shorter section.', true);
+  const script = withDefaultPauses(text);
+  if (script.length > scriptLimit) {
+    status('This script is too long. Import a shorter section.', true);
     return;
   }
-  $('text').value = text;
+  setEditorScript(script);
   count();
   status();
   $('text').focus();
@@ -261,7 +271,8 @@ function generate(preview) {
     resetWorker();
     return status('Generation cancelled.');
   }
-  const text = $('text').value.trim() || (preview ? sample : '');
+  const draft = $('text').value;
+  const text = (draft === blankScript ? '' : draft.trim()) || (preview ? sample : '');
   if (!text) {
     $('text').focus();
     return status('Enter a script or choose Use sample to generate a voiceover.', true);
@@ -289,7 +300,7 @@ function generate(preview) {
           previewPlayer.play().catch(() => {});
           return;
         }
-        tracks.voice = { ...data, name: 'open-local-tts-' + $('voice').value.slice(3) + '-narration' };
+        tracks.voice = { ...data, name: 'sano-local-tts-' + $('voice').value.slice(3) + '-narration' };
         if (source === 'voice') displayTrack();
         generating(false);
         status('Voiceover and captions are ready.');
@@ -313,15 +324,42 @@ function generate(preview) {
 $('generate').onclick = () => generate(false);
 $('preview').onclick = () => generate(true);
 
-const settingIds = ['voice', 'speed', 'pitch', 'volume', 'fade-in', 'fade-out', 'pause-duration', 'format'];
+const voiceSettingIds = ['voice', 'speed', 'pitch', 'volume', 'fade-in', 'fade-out'];
+const voiceStorageKey = 'open-local-tts.voice-settings.v1';
+
+function readVoiceSettings() {
+  const controls = Object.fromEntries(voiceSettingIds.map(id => [id, $(id).value]));
+  return { ...controls, ...expression.settings(), variation: variationSettings() };
+}
+
+function rememberVoiceSettings() {
+  voiceDefaults = readVoiceSettings();
+  try {
+    localStorage.setItem(voiceStorageKey, JSON.stringify(voiceDefaults));
+  } catch {
+    // The in-memory defaults still apply when the host blocks browser storage.
+  }
+}
 
 function snapshotPage() {
-  const settings = Object.fromEntries(settingIds.map(id => [id, $(id).value]));
   return {
-    script: $('text').value, settings: { ...settings, ...expression.settings(), variation: variationSettings() },
+    script: $('text').value, settings: { ...readVoiceSettings(), 'pause-duration': $('pause-duration').value, format: $('format').value },
     source, mode: document.querySelector('[data-mode][aria-pressed=true]').dataset.mode,
     voice: tracks.voice, record: tracks.record, recorder: recorder.snapshot()
   };
+}
+
+function applyVoiceSettings(settings) {
+  for (const id of voiceSettingIds) $(id).value = settings[id];
+  const variation = settings.variation ?? defaultVariation;
+  variationSeed = variation.seed;
+  $('volume-variation').value = variation.volume;
+  $('repeat-words').checked = variation.repeat;
+  $('slow-phrases').checked = variation.slow;
+  updateVariation();
+  expression.restore(settings);
+  $('speed').oninput();
+  $('volume').oninput();
 }
 
 function restorePage(page) {
@@ -332,17 +370,10 @@ function restorePage(page) {
   previewPlayer.hidden = true;
   if (previewUrl) URL.revokeObjectURL(previewUrl);
   previewUrl = undefined;
-  $('text').value = page.script;
-  for (const id of settingIds) $(id).value = page.settings[id];
-  const variation = page.settings.variation ?? defaultVariation;
-  variationSeed = variation.seed;
-  $('volume-variation').value = variation.volume;
-  $('repeat-words').checked = variation.repeat;
-  $('slow-phrases').checked = variation.slow;
-  updateVariation();
-  expression.restore(page.settings);
-  $('speed').oninput();
-  $('volume').oninput();
+  setEditorScript(page.script);
+  $('pause-duration').value = page.settings['pause-duration'];
+  $('format').value = page.settings.format;
+  applyVoiceSettings(page.settings);
   tracks.voice = page.voice;
   tracks.record = page.record;
   source = page.source;
@@ -352,24 +383,47 @@ function restorePage(page) {
   status();
 }
 
-function validPageSettings(settings, savedRecorder) {
-  const styles = [...$('tts-expression').querySelector('select').options].map(option => option.value);
-  const validExpression = value => value && styles.includes(value.emotion) && Number.isInteger(value.intensity) && value.intensity >= 0 && value.intensity <= 100;
-  if (settings?.variation !== undefined && !validVariation(settings.variation)) return false;
-  if (!validExpression(settings) || !validExpression(savedRecorder.expression)) return false;
-  const [name, amount] = String(savedRecorder.appliedStyle).split('-');
-  if (savedRecorder.appliedStyle !== 'Neutral' && !(styles.includes(name) && Number(amount) > 0 && Number(amount) <= 100 && savedRecorder.appliedStyle === name + '-' + Number(amount))) return false;
-  return settingIds.every(id => {
-    const control = $(id);
-    const value = settings[id];
-    if (typeof value !== 'string' || !value.length) return false;
-    if (control.options) return [...control.options].some(option => option.value === value);
-    const n = Number(value);
-    return Number.isFinite(n) && n >= Number(control.min) && n <= Number(control.max);
-  });
+const emotionNames = [...$('tts-expression').querySelector('select').options].map(option => option.value);
+
+function validExpression(value) {
+  return value && emotionNames.includes(value.emotion) && Number.isInteger(value.intensity) && value.intensity >= 0 && value.intensity <= 100;
 }
+
+function validControl(id, value) {
+  const control = $(id);
+  if (typeof value !== 'string' || !value.trim()) return false;
+  if (control.options) return [...control.options].some(option => option.value === value);
+  const n = Number(value);
+  return Number.isFinite(n) && n >= Number(control.min) && n <= Number(control.max);
+}
+
+function validVoiceSettings(settings) {
+  return validExpression(settings) && (settings.variation === undefined || validVariation(settings.variation)) &&
+    voiceSettingIds.every(id => validControl(id, settings[id]));
+}
+
+function validPageSettings(settings, savedRecorder) {
+  if (!validVoiceSettings(settings) || !validExpression(savedRecorder.expression)) return false;
+  const [name, amount] = String(savedRecorder.appliedStyle).split('-');
+  if (savedRecorder.appliedStyle !== 'Neutral' && !(emotionNames.includes(name) && Number(amount) > 0 && Number(amount) <= 100 && savedRecorder.appliedStyle === name + '-' + Number(amount))) return false;
+  return validControl('pause-duration', settings['pause-duration']) && validControl('format', settings.format);
+}
+
+try {
+  const saved = JSON.parse(localStorage.getItem(voiceStorageKey));
+  if (validVoiceSettings(saved)) applyVoiceSettings(saved);
+} catch {
+  // Missing or unreadable preferences leave the editor's initial values in place.
+}
+let voiceDefaults = readVoiceSettings();
+document.querySelector('#voice-panel .settings').addEventListener('input', rememberVoiceSettings);
+
+$('text').maxLength = scriptLimit;
+setEditorScript(blankScript);
+count();
 
 projectUI = setupProject({
   snapshot: snapshotPage, restore: restorePage, validateSettings: validPageSettings,
+  getVoiceDefaults: () => voiceDefaults,
   stopPlayback() { $('player').pause(); previewPlayer.pause(); }
 });

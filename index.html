@@ -5,15 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f5f6f4">
   <link rel="icon" href="/studio-icon.png">
-  <title>Open Local.TTS · Voiceover studio</title>
+  <title>Sano Local.TTS · Voiceover studio</title>
   <link rel="stylesheet" href="/src/style.css">
   <script async src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
 </head>
 <body>
   <header class="topbar"><div class="top-inner">
-    <div class="brand"><span class="brand-mark" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b></span>Open Local.TTS</div>
+    <div class="brand"><span class="brand-mark" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b></span>Sano Local.TTS</div>
     <span class="brand-sub">Audio studio</span>
-    <span class="local"><i class="dot"></i> Local workspace</span>
+    <span class="local"><i class="dot"></i> Locally processed in your browser</span>
   </div></header>
   <main>
     <header class="page-head"><div class="project-heading"><h1>Voiceover studio<span>.</span></h1><button id="project-mode" class="secondary" aria-expanded="false" aria-controls="project-tools"><i data-icon="pages"></i><span id="project-mode-label">Project mode</span></button></div>
@@ -58,9 +58,9 @@
 
     <section id="voice-panel" class="columns">
       <div class="card script-card"><div class="card-head"><h2><i data-icon="text"></i>Script</h2><button class="text-action" id="sample"><i data-icon="spark"></i>Use sample</button></div>
-        <div class="script-box"><textarea id="text" maxlength="6000" aria-label="Narration script" placeholder="Write or paste your narration here…"></textarea>
-        <div class="script-meta"><span><i data-icon="clock"></i><span id="estimate">~0 sec</span></span><span id="counter">0 / 6,000</span></div></div>
-        <p class="script-padding-note">Full scripts include 2 seconds of silence at each end.</p>
+        <div class="script-box"><textarea id="text" aria-label="Narration script" aria-describedby="script-pause-hint" placeholder="Write or paste your narration here…"></textarea>
+        <div class="script-meta"><span><i data-icon="clock"></i><span id="estimate">~0 sec</span></span><span id="counter">0</span></div></div>
+        <p class="script-padding-note" id="script-pause-hint">Write between the pause markers. Edit or delete either marker to change the timing.</p>
         <div class="script-foot">
           <div class="pause-tools"><button class="subtle" id="insert-pause"><i data-icon="pause"></i>Insert pause</button>
             <select id="pause-duration" aria-label="Pause duration"><option value="0.25">0.25 s</option><option value="0.5">0.5 s</option><option value="1" selected>1 s</option><option value="2">2 s</option><option value="5">5 s</option></select></div>
@@ -117,7 +117,7 @@
     </section>
     <div id="feedback" role="status" aria-live="polite"></div>
     </div>
-    <footer><span><i data-icon="shield"></i>Audio is processed on your device.</span><span>Open Local.TTS</span></footer>
+    <footer><span><i data-icon="shield"></i>Audio is processed on your device.</span><span>Sano Local.TTS</span></footer>
   </main>
   <script type="module" src="/src/main.js"></script>
 </body>

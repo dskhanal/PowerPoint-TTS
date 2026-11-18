@@ -1,9 +1,13 @@
 import { openProject, projectFile, projectZip, safeName } from './project-file.js';
 
-export function setupProject({ snapshot, restore, validateSettings, stopPlayback }) {
+export function setupProject({ snapshot, restore, validateSettings, getVoiceDefaults, stopPlayback }) {
   const $ = id => document.getElementById(id);
   const empty = snapshot();
-  const blankPage = title => ({ ...structuredClone(empty), title });
+  function blankPage(title) {
+    const page = structuredClone(empty);
+    Object.assign(page.settings, structuredClone(getVoiceDefaults()));
+    return { ...page, title };
+  }
   let project = { name: 'Untitled project', pages: [blankPage('Page 1')], activePage: 0 };
   let expanded = false;
   let downloads = false;
@@ -43,7 +47,7 @@ export function setupProject({ snapshot, restore, validateSettings, stopPlayback
       item.textContent = page.title;
       const info = document.createElement('small');
       const contents = [];
-      if (page.script.trim()) contents.push('Script');
+      if (page.script.trim() && page.script !== empty.script) contents.push('Script');
       for (const [label, track] of [['Narration', page.voice], ['Recording', page.record]]) {
         if (track) contents.push(label + ' WAV' + (track.cues.length ? ' + SRT/VTT' : ''));
       }
@@ -136,7 +140,7 @@ export function setupProject({ snapshot, restore, validateSettings, stopPlayback
   $('download-project').onclick = () => save(true);
   function hasWork() {
     return project.pages.length > 1 || project.name !== 'Untitled project' || current().title !== 'Page 1' ||
-      current().script || current().voice || current().record || JSON.stringify(current().settings) !== JSON.stringify(empty.settings);
+      current().script !== empty.script || current().voice || current().record || JSON.stringify(current().settings) !== JSON.stringify(blankPage('Page 1').settings);
   }
   $('new-project').onclick = () => {
     checkpoint();

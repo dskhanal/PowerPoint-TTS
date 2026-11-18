@@ -2,3 +2,5 @@ node_modules/
 dist/
 
 /public/models/Xenova/whisper-tiny.en/
+/public/models/kokoro/
+/public/models/piper/

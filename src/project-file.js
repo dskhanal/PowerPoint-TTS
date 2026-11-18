@@ -1,8 +1,10 @@
 import { Zip, ZipPassThrough } from 'fflate';
 import { captionsFile } from './audio.js';
 
+import { scriptLimit, withDefaultPauses } from './script-delivery.js';
+
 const format = 'open-local-tts-project';
-const version = 1;
+const version = 2;
 
 export function safeName(name) {
   return name.replace(/[<>:"/\\|?*\u0000-\u001f]/g, '-').replace(/^\.+|[. ]+$/g, '').trim().slice(0, 95) || 'Untitled';
@@ -72,7 +74,7 @@ function loadAudio(encoded) {
 
 export async function openProject(file, validateSettings) {
   const data = JSON.parse(await file.text());
-  check(data?.format === format && data.version === version, 'Choose a supported Open Local.TTS project JSON file.');
+  check(data?.format === format && [1, version].includes(data.version), 'Choose a supported Sano Local.TTS project JSON file.');
   const title = value => typeof value === 'string' && value.trim() && value.length <= 100;
   check(title(data.name) && Array.isArray(data.pages) && data.pages.length > 0 &&
     Number.isInteger(data.activePage) && data.activePage >= 0 && data.activePage < data.pages.length &&
@@ -93,14 +95,15 @@ export async function openProject(file, validateSettings) {
   }
   const pages = data.pages.map((p, index) => {
     try {
-      check(p && title(p.title) && typeof p.script === 'string' && p.script.length <= 6000 &&
+      check(p && title(p.title) && typeof p.script === 'string' && p.script.length <= (data.version === 1 ? 6000 : scriptLimit) &&
         ['voice','record'].includes(p.source) && [p.source,'captions'].includes(p.mode), 'Invalid page contents.');
       check(p.recorder && validateSettings(p.settings, p.recorder), 'Invalid voice or recording settings.');
       const voice = restoreTrack(p.voice);
       const record = restoreTrack(p.record);
       const original = restoreTrack(p.recorder.original);
       check(record ? original && record.rate === 48000 && original.rate === 48000 && record.duration === original.duration : !original, 'Invalid original recording.');
-      return { title: p.title, script: p.script, settings: p.settings, mode: p.mode, source: p.source, voice, record,
+      const script = data.version === 1 ? withDefaultPauses(p.script) : p.script;
+      return { title: p.title, script, settings: p.settings, mode: p.mode, source: p.source, voice, record,
         recorder: { expression: p.recorder.expression, appliedStyle: p.recorder.appliedStyle, original } };
     } catch (error) { throw new Error('Page ' + (index + 1) + ' — ' + error.message); }
   });

@@ -1,6 +1,17 @@
 import { scriptParts, splitScript } from './audio.js';
 
-export const edgeSilence = 2;
+const defaultPause = '[pause 2s]';
+export const blankScript = defaultPause + '\n\n' + defaultPause;
+// Keep room for both markers around a previously supported 6,000-character script.
+export const scriptLimit = 6000 + blankScript.length;
+
+export function withDefaultPauses(text) {
+  if (!text.trim()) return blankScript;
+  const parts = scriptParts(text.trim());
+  const start = 'pause' in parts[0] ? '' : defaultPause + '\n';
+  const end = 'pause' in parts.at(-1) ? '' : '\n' + defaultPause;
+  return start + text + end;
+}
 export const defaultVariation = Object.freeze({ volume: 'off', repeat: false, slow: false, seed: 0 });
 
 export function validVariation(v) {

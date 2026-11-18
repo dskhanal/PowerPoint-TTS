@@ -28,7 +28,7 @@ jobs:
         id: pages
         uses: actions/configure-pages@v5
       - run: npm ci --ignore-scripts
-      - name: Build the studio and prepare Whisper
+      - name: Build the studio with voice and caption models
         env:
           PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
         run: npm run build -- --base="${PAGES_BASE_PATH}/"

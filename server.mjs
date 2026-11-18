@@ -19,4 +19,4 @@ const server=https.createServer({cert:fs.readFileSync(cert),key:fs.readFileSync(
   if(!file.startsWith(path.resolve(dist)+path.sep)&&file!==path.resolve(dist,'index.html')){res.writeHead(403);return res.end('Forbidden');}
   fs.stat(file,(err,s)=>{const target=!err&&s.isFile()?file:path.join(dist,'index.html');fs.readFile(target,(e,data)=>{if(e){res.writeHead(404);return res.end('Not found');}res.writeHead(200,{'Content-Type':types[path.extname(target)]||'application/octet-stream','Cache-Control':'no-cache'});res.end(data);});});
 });
-server.listen(3000,'localhost',()=>console.log('Open Local.TTS PowerPoint add-in: https://localhost:3000'));
+server.listen(3000,'localhost',()=>console.log('Sano Local.TTS PowerPoint add-in: https://localhost:3000'));

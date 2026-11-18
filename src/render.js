@@ -1,7 +1,7 @@
 import { applyExpression } from './voice-effects.js';
 import { delivery } from './expression.js';
 import { wavBlob, waveform } from './audio.js';
-import { edgeSilence, phraseSpeed, shapeVolume } from './script-delivery.js';
+import { phraseSpeed, shapeVolume } from './script-delivery.js';
 
 export async function renderNarration(engine, plan, settings, progress) {
   const { voice, speed, pitch = 0, volume = 100, fadeIn = 0, fadeOut = 0 } = settings;
@@ -42,25 +42,16 @@ export async function renderNarration(engine, plan, settings, progress) {
 
   if (volume !== 100 || fadeIn || fadeOut) {
     const gain = volume / 100;
+    const firstSpeech = Math.round(cues[0].start * rate);
+    const lastSpeech = Math.round(cues.at(-1).end * rate);
     let frame = 0;
     for (const chunk of chunks) {
       for (let i = 0; i < chunk.length; i++, frame++) {
-        const attack = fadeIn ? frame / (fadeIn * rate) : 1;
-        const release = fadeOut ? (length - 1 - frame) / (fadeOut * rate) : 1;
+        const attack = fadeIn ? Math.max(0, frame - firstSpeech) / (fadeIn * rate) : 1;
+        const release = fadeOut ? Math.max(0, lastSpeech - 1 - frame) / (fadeOut * rate) : 1;
         const sample = chunk[i] * gain * Math.min(1, attack, release);
         chunk[i] = Math.max(-1, Math.min(1, sample));
       }
-    }
-  }
-  // Pad the finished script once, after its fades. Auditions play immediately.
-  if (!settings.preview) {
-    const silence = new Float32Array(edgeSilence * rate);
-    chunks.unshift(silence);
-    chunks.push(silence);
-    length += 2 * silence.length;
-    for (const cue of cues) {
-      cue.start += edgeSilence;
-      cue.end += edgeSilence;
     }
   }
   return { blob: wavBlob(chunks, rate, length), peaks: waveform(chunks, length), duration: length / rate, cues };

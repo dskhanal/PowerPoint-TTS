@@ -1,85 +1,30 @@
-# Open Local.TTS for PowerPoint — JavaScript-only, sideloadable build
+# Sano Local.TTS
 
-This package uses `kokoro-js` 1.2.1 and runs speech inference in the Office task pane through WebAssembly. It has no Python service.
+Create English voiceovers and timed captions in your browser. The studio serves its own speech models and processes your scripts and audio on your device. [Open the studio](https://dskhanal.github.io/OpenLocalTTS/)
 
-## Browser studio
+## Use the studio
 
-With Node.js 20 or 22 installed, run `npm ci` and `npm run dev` from this folder. Open the local address printed by Vite in a current desktop browser.
+- **Narrate a script.** Choose an Australian, American or British voice. Edit or delete the `[pause 2s]` markers at either end, then select **Generate voiceover**. The studio remembers your voice settings for new pages.
+- **Export audio and captions.** Save narration as WAV and captions as SRT or WebVTT. To caption existing audio, choose **Record audio → Open audio file**.
+- **Save a project.** Use **Project mode** for multiple scripts. **Save JSON** lets you resume editing. **Download all** collects the pages and their exports into a ZIP.
 
-Type or paste an English script, import a plain-text file, or choose **Use sample**. Select an Australian, American or British English voice and set the speed between 0.5× and 2×. Choose **Generate voiceover**. The first generation downloads the model for the selected voice family. The app runs synthesis in a browser worker and supports cancellation.
+## Run locally
 
-Place the cursor in your script, choose a duration and select **Insert pause**. For example, `Welcome.[pause 2s]Let’s begin.` inserts two seconds of silence. An ellipsis (`...` or `…`) inserts one second. Caption cues stop for the pause and resume with the next spoken phrase.
+With Node.js 22 installed, run these commands and open the address Vite prints.
 
-Every newly generated full script includes two seconds of silence before and after the narration. Scripted pauses add to those gaps. Captions begin with the spoken audio and finish before the closing silence. Voice previews play immediately.
+```sh
+npm ci
+npm run dev
+```
 
-Under **Natural delivery**, choose gentle volume dips, louder accents, or a mix. You can also repeat an occasional word and slow selected phrases. These effects start off. The source script stays editable, and captions include any words repeated in the audio. **Shuffle variation** chooses a new arrangement. Preview and full generation use the same arrangement, which is saved per page in the project JSON.
+The first run downloads the models. For production, run `npm run build` and host `dist/` over HTTPS. For GitHub Pages, select **Settings → Pages → Source → GitHub Actions**. Pushes to `main` trigger deployment.
 
-Choose an **Emotion** (Calm, Cheerful, Serious or Excited) and adjust **Intensity**. These local audio presets shape pitch, vocal brightness and syllable emphasis. In text-to-speech they also adjust speaking pace within the 0.5× to 2× range. Neutral and 0% intensity use the voice’s ordinary delivery. Preview a phrase to hear how the effect suits the speaker and script.
+## PowerPoint
 
-Choose **Vocal pitch** to raise or lower the voice by two or four semitones while preserving its pace. **Volume and fades** adjusts the exported level and the fade at each end of the track. **Preview voice** plays the first spoken phrase with your settings, or a sample if the script is empty. Choose **Generate voiceover** to apply edits to the full WAV and captions.
+On Windows with Microsoft 365, run `.\setup.ps1` once, then `.\start.ps1` from PowerShell. Upload `manifest.xml` through **My Add-ins → Upload My Add-in**. Choose **Get selected text** to narrate slide text, then insert the exported WAV with **Insert → Audio**.
 
-Play or seek the finished narration in the audio monitor and choose **Export audio** for a mono WAV (22.05 kHz for Australian voices, 24 kHz for Kokoro voices). Open **Captions** to play from a cue, edit its wording and export an SRT or WebVTT file. Each cue uses the duration of its generated phrase. Export the files before closing the studio.
+## Model credits
 
-## Multi-page projects
+American and British voices use Kokoro. Whisper Tiny English supplies transcription. [Kokoro](https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX) · [Whisper](https://huggingface.co/Xenova/whisper-tiny.en)
 
-Choose **Project mode** to keep the current studio work as the first page. Name the project and use **Add page** to start another script or recording in the same window. Select a page to return to its editor. **Move earlier** and **Move later** set the order of the pages in the project and downloads.
-
-**Save JSON** downloads one self-contained project file with the scripts, voice settings, generated and recorded audio, original takes, and edited timed captions. **Open JSON** restores the pages and the active editor from that file. Save before closing the studio.
-
-**Download all** opens a page-by-page inventory. **Download project ZIP** includes the project JSON and a numbered folder for every page. Each folder contains its script and any available narration or recording WAV, SRT and WebVTT files. A page with a draft script can be exported before audio generation.
-
-## Recording and local Whisper captions
-
-Open **Record audio**, select **Start recording**, and allow microphone access. **Stop recording** releases the microphone and prepares a 48 kHz mono WAV. **Export audio** saves it immediately, including while Whisper is transcribing. **Open audio file** also accepts recordings in formats your browser can decode.
-
-Whisper Tiny English transcribes the audio in a separate browser worker. Select **Review captions** to listen from each timestamp, edit the recognised text, and export SRT or WebVTT. You can cancel transcription and retry with the same WAV. Recording and TTS keep separate audio and caption edits for the current session. Download the files you want to keep before closing the page.
-
-After transcription, the recorder’s **Emotion** and **Apply to recording** controls let you adjust a take and export the result. Each adjustment starts from the original WAV and keeps its duration and caption edits. Select **Neutral** and apply to restore the original.
-
-The first development start or production build installs about 43 MB of pinned, checksum-verified model files under `public/models/Xenova/whisper-tiny.en/`. To prepare them explicitly, run `npm run prepare:whisper`. Subsequent builds reuse the files offline. Vite includes them and the WebAssembly runtime in `dist/`. Whisper reads from the app’s own server, with remote model loading disabled. Microphone capture requires localhost or HTTPS and permission from the browser or Office host. [Whisper model and licence](https://huggingface.co/Xenova/whisper-tiny.en)
-
-## Australian English voices
-
-The Australian English group includes Angus, Banjo, Bindi, Flynn, Kirra, Marlo, Matilda, Tully and Willow. They share a 77 MB model that the browser caches when storage is available. These voices were trained on audiobook readings and have a literary delivery. The speed control, timed captions and WAV export work with every speaker.
-
-The studio uses Data Craftsman Australia’s unmodified Piper model under CC BY 4.0. The publisher lists the source recordings and narrators in its attribution file. [Model and samples](https://huggingface.co/DataCraftsmanAustralia/piper-en_AU-librivox-medium) · [Narrator credits](https://huggingface.co/DataCraftsmanAustralia/piper-en_AU-librivox-medium/blob/main/ATTRIBUTION.md) · [Licence](https://creativecommons.org/licenses/by/4.0/)
-
-## PowerPoint requirements
-- Windows 10/11
-- PowerPoint for Microsoft 365 desktop
-- Node.js 20 or 22 LTS for local sideload testing only
-- Internet access on first generation so the quantised Kokoro model can be downloaded
-
-## One-time setup
-1. Extract the ZIP to a permanent folder, such as `C:\KokoroPowerPointJS`.
-2. Open PowerShell in that folder.
-3. Run: `Set-ExecutionPolicy -Scope Process Bypass`
-4. Run: `.\setup.ps1`
-5. Accept the prompt to trust the Microsoft Office add-in development certificate.
-
-The script installs npm packages, creates a trusted localhost HTTPS certificate, builds the production assets, and validates `manifest.xml`.
-
-## Start and sideload
-1. Run `.\start.ps1` and leave PowerShell open.
-2. Confirm `https://localhost:3000` opens in Edge without a certificate warning.
-3. In PowerPoint select **Home > Add-ins > More Add-ins > My Add-ins > Upload My Add-in**.
-4. Browse to this folder and select `manifest.xml`.
-5. Open **Open Local.TTS for PowerPoint** from **Home > Add-ins**.
-
-If **Upload My Add-in** is unavailable on a managed Holmesglen device, use an approved network shared-folder catalogue or ask Microsoft 365 administrators to upload `manifest.xml` through **Integrated apps**.
-
-## Using narration in PowerPoint
-
-Select slide text and choose **Get selected text** in the task pane. Generate and export the voiceover, then insert the WAV using **Insert > Audio > Audio on My PC**. Export WebVTT from the Captions tab when you need a caption file.
-
-## GitHub Pages
-
-In the repository's **Settings → Pages → Build and deployment**, set **Source** to **GitHub Actions**. Push the deployment workflow to `main`. Subsequent pushes to `main` publish automatically. To redeploy the same revision, choose **Actions → Deploy GitHub Pages → Run workflow**.
-
-The workflow uses the Pages site path when building the app and publishes `dist/`, including the Whisper model and its browser runtime. To reproduce the build for this repository locally, run `npm run build -- --base=/OpenLocalTTS/` and then `npx vite preview --base=/OpenLocalTTS/`. Open the address ending in `/OpenLocalTTS/`.
-
-## Production deployment
-End users do not need Node.js when `dist/` is hosted centrally. Publish `dist/` to an organisational HTTPS site, replace every `https://localhost:3000/` value in `manifest.xml` with that origin, validate the manifest, and deploy it through Microsoft 365 Integrated apps.
-
-## Privacy and network behaviour
-Narration inference runs on the user's computer. Voice assets are downloaded from the Kokoro or Australian Piper model repository on Hugging Face when first used. For restricted networks, mirror those assets to an approved internal host before broad deployment.
+The Australian voices use Data Craftsman Australia’s unmodified Piper model under CC BY 4.0. [Model](https://huggingface.co/DataCraftsmanAustralia/piper-en_AU-librivox-medium) · [Narrator credits](https://huggingface.co/DataCraftsmanAustralia/piper-en_AU-librivox-medium/blob/main/ATTRIBUTION.md) · [Licence](https://creativecommons.org/licenses/by/4.0/)

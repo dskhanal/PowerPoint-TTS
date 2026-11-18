@@ -1,9 +1,9 @@
 import { env, InferenceSession, Tensor } from 'onnxruntime-web/webgpu';
 import { phonemize } from 'phonemizer';
 import { australianVoices } from './australian-voices.js';
+import { piperDirectory } from './voice-models.js';
 
-const revision = '3faad046064c56f7316ffd745d5a8b14035f35df';
-const modelUrl = 'https://huggingface.co/DataCraftsmanAustralia/piper-en_AU-librivox-medium/resolve/' + revision + '/en_AU-librivox-medium.onnx';
+const modelUrl = new URL(import.meta.env.BASE_URL + 'models/' + piperDirectory + '/en_AU-librivox-medium.onnx', self.location.origin).href;
 
 async function fetchAsset(url, cache) {
   const cached = await cache?.match(url);

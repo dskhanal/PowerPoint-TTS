@@ -18,7 +18,7 @@ svg { width: 18px; height: 18px; flex: none; vertical-align: middle }
 .topbar { border-bottom: 1px solid var(--line); background: #fafbf8 }
 .top-inner, main { width: min(1120px, calc(100% - 88px)); margin: auto }
 .top-inner { height: 71px; display: flex; align-items: center; gap: 20px }
-.brand { display: flex; align-items: center; gap: 10px; font-weight: 770; font-size: 23px; letter-spacing: -1.3px }
+.brand { display: flex; flex: none; white-space: nowrap; align-items: center; gap: 10px; font-weight: 770; font-size: 23px; letter-spacing: -1.3px }
 .brand-mark { display: flex; align-items: center; justify-content: center; gap: 2.4px; background: var(--ink); width: 34px; height: 34px; border-radius: 9px; transform: rotate(-4deg) }
 .brand-mark b { width: 2.5px; border-radius: 4px; height: 8px; background: var(--lime) }
 .brand-mark b:nth-child(2) { height: 16px }.brand-mark b:nth-child(3) { height: 23px }.brand-mark b:nth-child(4) { height: 12px }

@@ -1,5 +1,5 @@
 {
-  "name": "kokoro-powerpoint-js",
+  "name": "sano-local-tts",
   "version": "1.0.1",
   "private": true,
   "type": "module",
@@ -12,8 +12,9 @@
     "start": "node server.mjs",
     "validate": "office-addin-manifest validate manifest.xml",
     "prepare:whisper": "node scripts/prepare-whisper.mjs",
-    "predev": "npm run prepare:whisper",
-    "prebuild": "npm run prepare:whisper"
+    "prepare:models": "npm run prepare:whisper && node scripts/prepare-voices.mjs",
+    "predev": "npm run prepare:models",
+    "prebuild": "npm run prepare:models"
   },
   "dependencies": {
     "@huggingface/transformers": "3.8.1",
