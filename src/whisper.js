@@ -4,7 +4,7 @@ import { configureWasm } from './wasm.js';
 configureWasm(env);
 env.allowLocalModels = true;
 env.allowRemoteModels = false;
-env.localModelPath = new URL('/models/', self.location.origin).href;
+env.localModelPath = new URL(import.meta.env.BASE_URL + 'models/', self.location.origin).href;
 env.useBrowserCache = false;
 let recognizer;
 

@@ -72,6 +72,12 @@ If **Upload My Add-in** is unavailable on a managed Holmesglen device, use an ap
 
 Select slide text and choose **Get selected text** in the task pane. Generate and export the voiceover, then insert the WAV using **Insert > Audio > Audio on My PC**. Export WebVTT from the Captions tab when you need a caption file.
 
+## GitHub Pages
+
+In the repository's **Settings → Pages → Build and deployment**, set **Source** to **GitHub Actions**. Push the deployment workflow to `main`. Subsequent pushes to `main` publish automatically. To redeploy the same revision, choose **Actions → Deploy GitHub Pages → Run workflow**.
+
+The workflow uses the Pages site path when building the app and publishes `dist/`, including the Whisper model and its browser runtime. To reproduce the build for this repository locally, run `npm run build -- --base=/OpenLocalTTS/` and then `npx vite preview --base=/OpenLocalTTS/`. Open the address ending in `/OpenLocalTTS/`.
+
 ## Production deployment
 End users do not need Node.js when `dist/` is hosted centrally. Publish `dist/` to an organisational HTTPS site, replace every `https://localhost:3000/` value in `manifest.xml` with that origin, validate the manifest, and deploy it through Microsoft 365 Integrated apps.
 
