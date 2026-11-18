@@ -1,1 +1,96 @@
-<!doctype html><html lang="en-AU"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Kokoro TTS for PowerPoint</title><script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script></head><body><div id="app"></div><script type="module" src="/src/main.js"></script></body></html>
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f6f4">
+  <link rel="icon" href="/studio-icon.png">
+  <title>Open Local.TTS · Voiceover studio</title>
+  <link rel="stylesheet" href="/src/style.css">
+  <script async src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+</head>
+<body>
+  <header class="topbar"><div class="top-inner">
+    <div class="brand"><span class="brand-mark" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b></span>Open Local.TTS</div>
+    <span class="brand-sub">Audio studio</span>
+    <span class="local"><i class="dot"></i> Local workspace</span>
+  </div></header>
+  <main>
+    <header class="page-head"><h1>Voiceover studio<span>.</span></h1>
+      <p>Generate voiceovers or record your own audio with timed captions.</p></header>
+    <section class="monitor" aria-label="Audio monitor">
+      <div class="monitor-head"><h2><i data-icon="wave"></i>Audio monitor</h2><span class="monitor-state"><i class="dot"></i><span id="monitor-state">Standby</span></span></div>
+      <div class="scope" id="scope"><canvas id="wave" aria-hidden="true"></canvas><input id="seek" type="range" min="0" max="1" step="any" value="0" aria-label="Seek audio" disabled></div>
+      <div class="ruler" aria-hidden="true" id="ruler"></div>
+      <div class="transport">
+        <button class="play" id="play" aria-label="Play audio" disabled><i data-icon="play"></i></button>
+        <span class="time"><span id="elapsed">00:00</span><span class="muted"> / </span><span class="muted" id="duration">00:00</span></span>
+        <span id="track-name">No audio loaded</span>
+        <button id="mute" class="mute" aria-label="Mute audio" aria-pressed="false" disabled><i data-icon="volume"></i></button>
+        <a id="download" class="export" aria-disabled="true"><i data-icon="download"></i>Export audio</a>
+      </div>
+      <audio id="player" preload="metadata"></audio>
+    </section>
+
+    <nav class="modes" aria-label="Studio tools">
+      <button class="active" aria-pressed="true" data-mode="voice"><i data-icon="wave"></i>Text to speech</button>
+      <button aria-pressed="false" data-mode="record"><i data-icon="mic"></i>Record audio</button>
+      <button aria-pressed="false" data-mode="captions"><i data-icon="cc"></i>Captions</button>
+    </nav>
+
+    <section id="voice-panel" class="columns">
+      <div class="card script-card"><div class="card-head"><h2><i data-icon="text"></i>Script</h2><button class="text-action" id="sample"><i data-icon="spark"></i>Use sample</button></div>
+        <div class="script-box"><textarea id="text" maxlength="6000" aria-label="Narration script" placeholder="Write or paste your narration here…"></textarea>
+        <div class="script-meta"><span><i data-icon="clock"></i><span id="estimate">~0 sec</span></span><span id="counter">0 / 6,000</span></div></div>
+        <div class="script-foot">
+          <div class="pause-tools"><button class="subtle" id="insert-pause"><i data-icon="pause"></i>Insert pause</button>
+            <select id="pause-duration" aria-label="Pause duration"><option value="0.25">0.25 s</option><option value="0.5">0.5 s</option><option value="1" selected>1 s</option><option value="2">2 s</option><option value="5">5 s</option></select></div>
+          <button class="subtle" id="import-text"><i data-icon="upload"></i>Import text</button><input type="file" id="text-file" accept=".txt,text/plain" hidden>
+          <button class="subtle" id="selection" hidden>Get selected text</button>
+        </div>
+      </div>
+      <div class="card settings"><div class="card-head"><h2><i data-icon="sliders"></i>Voice settings</h2></div>
+        <label for="voice">Voice</label><div class="voice-field"><span class="voice-icon"><i data-icon="wave"></i></span><select id="voice"></select></div>
+        <fieldset id="tts-expression" class="expression"></fieldset>
+        <label for="pitch">Vocal pitch</label>
+        <select id="pitch"><option value="-4">Extra low</option><option value="-2">Low</option><option value="0" selected>Natural</option><option value="2">High</option><option value="4">Extra high</option></select>
+        <div class="speed-label"><label for="speed">Speed</label><output for="speed" id="speed-out">1.00×</output></div>
+        <input type="range" id="speed" min="0.5" max="2" step="0.05" value="1">
+        <div class="range-labels"><span>0.5×</span><span>2.0×</span></div>
+        <details class="audio-settings"><summary>Volume and fades</summary>
+          <div class="speed-label"><label for="volume">Output volume</label><output id="volume-out" for="volume">100%</output></div>
+          <input type="range" id="volume" min="0" max="200" step="5" value="100">
+          <div class="fades"><label>Fade in<select id="fade-in"><option value="0">Off</option><option value="0.25">0.25 s</option><option value="0.5">0.5 s</option><option value="1">1 s</option><option value="2">2 s</option></select></label>
+          <label>Fade out<select id="fade-out"><option value="0">Off</option><option value="0.25">0.25 s</option><option value="0.5">0.5 s</option><option value="1">1 s</option><option value="2">2 s</option></select></label></div>
+        </details>
+        <div class="render-actions"><button id="preview" class="secondary" title="Hear the first phrase with these settings"><i data-icon="play"></i>Preview voice</button>
+        <button class="primary" id="generate"><i data-icon="wave"></i>Generate voiceover</button></div>
+        <audio id="preview-audio" controls hidden aria-label="Voice preview"></audio>
+      </div>
+    </section>
+    <section id="record-panel" class="card tool-card" hidden>
+      <div class="card-head"><h2><i data-icon="mic"></i>Audio recorder</h2><span class="caption-language">Whisper · English</span></div>
+      <p>Record with your microphone or open a saved audio file. Whisper creates timed captions on this device.</p>
+      <div class="record-controls">
+        <button id="record-button" class="primary"><i data-icon="mic"></i>Start recording</button>
+        <span id="record-time" class="clock" aria-label="Recording time">00:00</span>
+        <button id="open-audio" class="secondary"><i data-icon="upload"></i>Open audio file</button>
+        <input type="file" id="record-file" accept="audio/*,.wav,.webm,.m4a,.mp3,.ogg,.flac" hidden>
+      </div>
+      <div class="actions"><button class="secondary" id="recognize" hidden>Generate captions</button>
+        <button class="secondary" id="view-transcript" hidden>Review captions</button></div>
+      <div id="take-expression" hidden><fieldset id="record-expression" class="expression"></fieldset>
+        <button class="secondary" id="apply-expression" disabled>Apply to recording</button></div>
+      <p id="record-status" role="status" aria-live="polite">Microphone off.</p>
+    </section>
+    <section id="captions-panel" class="card tool-card" hidden>
+      <div class="card-head"><h2><i data-icon="cc"></i>Captions</h2><span class="caption-language">English</span></div>
+      <p id="caption-hint">Generate a voiceover or record audio to create captions.</p>
+      <div id="caption-results" hidden><div class="caption-toolbar"><h3>Transcript</h3><div class="actions"><select id="format" aria-label="Caption export format"><option>SRT</option><option>VTT</option></select><button class="secondary" id="export-captions"><i data-icon="download"></i>Export captions</button></div></div><div id="cues"></div></div>
+    </section>
+    <div id="feedback" role="status" aria-live="polite"></div>
+    <footer><span><i data-icon="shield"></i>Audio is processed on your device.</span><span>Open Local.TTS</span></footer>
+  </main>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="TaskPaneApp">
 <Id>756ed458-5fb8-4b18-b8da-a9e7775a8baf</Id><Version>1.0.0.0</Version><ProviderName>Sanjaya Khanal</ProviderName><DefaultLocale>en-AU</DefaultLocale>
-<DisplayName DefaultValue="Kokoro TTS for PowerPoint"/><Description DefaultValue="Generate Kokoro speech locally in JavaScript from PowerPoint text."/>
-<SupportUrl DefaultValue="https://localhost:3000/"/><AppDomains><AppDomain>https://localhost:3000</AppDomain></AppDomains><Hosts><Host Name="Presentation"/></Hosts>
+<DisplayName DefaultValue="Open Local.TTS for PowerPoint"/><Description DefaultValue="Generate local voiceovers and timed captions from PowerPoint text."/>
+<IconUrl DefaultValue="https://localhost:3000/studio-icon.png"/><SupportUrl DefaultValue="https://localhost:3000/"/><AppDomains><AppDomain>https://localhost:3000</AppDomain></AppDomains><Hosts><Host Name="Presentation"/></Hosts>
 <DefaultSettings><SourceLocation DefaultValue="https://localhost:3000/"/></DefaultSettings><Permissions>ReadDocument</Permissions></OfficeApp>

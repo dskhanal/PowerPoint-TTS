@@ -1,0 +1,5 @@
+English Whisper Tiny model by OpenAI. ONNX conversion by Xenova.
+Model source: https://huggingface.co/Xenova/whisper-tiny.en
+Revision: 79fb389fc764e7c395bd330e9531d9d32ada7049
+The model repository identifies its licence as Apache License 2.0.
+See whisper-Apache-2.0.txt. Original Whisper model: https://github.com/openai/whisper

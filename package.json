@@ -3,18 +3,28 @@
   "version": "1.0.1",
   "private": true,
   "type": "module",
-  "engines": {"node": ">=20 <25"},
+  "engines": {
+    "node": ">=20 <25"
+  },
   "scripts": {
+    "dev": "vite",
     "build": "vite build",
     "start": "node server.mjs",
-    "validate": "office-addin-manifest validate manifest.xml"
+    "validate": "office-addin-manifest validate manifest.xml",
+    "prepare:whisper": "node scripts/prepare-whisper.mjs",
+    "predev": "npm run prepare:whisper",
+    "prebuild": "npm run prepare:whisper"
   },
   "dependencies": {
-    "kokoro-js": "1.2.1"
+    "@huggingface/transformers": "3.8.1",
+    "@soundtouchjs/core": "2.1.1",
+    "kokoro-js": "1.2.1",
+    "onnxruntime-web": "1.22.0-dev.20250409-89f8206ba4",
+    "phonemizer": "1.2.1"
   },
   "devDependencies": {
-    "@microsoft/office-addin-dev-certs": "^2.0.3",
-    "office-addin-manifest": "^1.13.10",
+    "office-addin-dev-certs": "^2.0.3",
+    "office-addin-manifest": "3.0.1",
     "vite": "6.4.5"
   }
 }

@@ -1,26 +1,281 @@
-import './style.css';
-import { KokoroTTS } from 'kokoro-js';
+import { australianVoices } from './australian-voices.js';
+import { icon } from './icons.js';
+import { captionsFile, clock, scriptParts } from './audio.js';
+import { delivery, expressionControls } from './expression.js';
+import { setupRecorder } from './recording.js';
+import { setupMonitor } from './monitor.js';
 
-const app=document.querySelector('#app');
-app.innerHTML=`<main><header><div class="logo">K</div><div><h1>Kokoro TTS</h1><p>Local PowerPoint narration</p></div></header>
-<section class="card"><label for="text">Narration text</label><textarea id="text" rows="8" placeholder="Select PowerPoint text, then choose Get selected text"></textarea><div class="between"><button id="selection" class="secondary">Get selected text</button><span id="counter">0 characters</span></div></section>
-<section class="card"><label for="voice">Voice</label><select id="voice"><option>Loading voices…</option></select><label for="speed">Speed <output id="speedOut">1.00×</output></label><input id="speed" type="range" min="0.5" max="2" value="1" step="0.05"><div class="between small"><span>Runs locally using Kokoro</span><span id="engine">Not loaded</span></div></section>
-<button id="generate" class="primary">Generate WAV</button><div id="status" role="status" aria-live="polite"></div>
-<section id="result" class="card hidden"><audio id="player" controls></audio><a id="download" class="download" download="kokoro-narration.wav">Download WAV</a><p class="hint">Then use PowerPoint → Insert → Audio → Audio on My PC.</p></section></main>`;
-const $=id=>document.getElementById(id); let tts=null, blobUrl=null;
-function status(v,bad=false){$('status').textContent=v;$('status').className=bad?'error':''}
-function count(){$('counter').textContent=`${$('text').value.length} characters`}
-$('text').addEventListener('input',count); $('speed').addEventListener('input',()=>{$('speedOut').value=`${Number($('speed').value).toFixed(2)}×`});
-async function initialise(){if(tts)return tts; status('First run: downloading and loading the Kokoro model…'); $('engine').textContent='Loading'; try{tts=await KokoroTTS.from_pretrained('onnx-community/Kokoro-82M-v1.0-ONNX',{dtype:'q8',device:'wasm'});const voices=tts.list_voices();$('voice').innerHTML='';for(const [id,info] of Object.entries(voices)){const o=document.createElement('option');o.value=id;o.textContent=`${id}${info?.name?` — ${info.name}`:''}`;$('voice').append(o)}$('engine').textContent='Ready';status('Kokoro is ready.');return tts}catch(e){$('engine').textContent='Load failed';status(`Model load failed: ${e.message}`,true);throw e}}
-function getSelection(){if(!globalThis.Office){status('Open this task pane inside PowerPoint to read slide selection.',true);return} Office.context.document.getSelectedDataAsync(Office.CoercionType.Text,{valueFormat:Office.ValueFormat.Unformatted},r=>{if(r.status===Office.AsyncResultStatus.Succeeded){$('text').value=(r.value||'').trim();count();status($('text').value?'Selected text added.':'No text was selected.')}else status(r.error.message,true)})}
-$('selection').addEventListener('click',getSelection);
-$('generate').addEventListener('click',async()=>{const text=$('text').value.trim();if(!text){status('Enter or select some text first.',true);return}const b=$('generate');b.disabled=true;try{const engine=await initialise();status('Generating WAV locally…');const audio=await engine.generate(text,{voice:$('voice').value,speed:Number($('speed').value)});const wav=audio.toBlob ? await audio.toBlob() : pcmToWavBlob(audio);if(!wav)throw new Error('Unable to create a WAV from Kokoro output.');if(blobUrl)URL.revokeObjectURL(blobUrl);blobUrl=URL.createObjectURL(wav);$('player').src=blobUrl;$('download').href=blobUrl;$('result').classList.remove('hidden');status('Narration is ready.')}catch(e){status(e.message,true)}finally{b.disabled=false}});
-Office?.onReady?.(()=>{status('PowerPoint add-in ready. Select text or type narration.');});
-// Lazy model loading keeps PowerPoint startup fast. Model downloads on first Generate.
+const $ = id => document.getElementById(id);
+document.querySelectorAll('[data-icon]').forEach(node => node.replaceWith(
+  document.createRange().createContextualFragment(icon(node.dataset.icon))
+));
 
-function pcmToWavBlob(audio){
-  const samples=audio?.audio ?? audio?.data ?? null; const rate=audio?.sampling_rate ?? audio?.samplingRate ?? 24000;
-  if(!samples || !samples.length)return null; const buf=new ArrayBuffer(44+samples.length*2),v=new DataView(buf);
-  const w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))}; w(0,'RIFF');v.setUint32(4,36+samples.length*2,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,rate,true);v.setUint32(28,rate*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,samples.length*2,true);
-  for(let i=0;i<samples.length;i++){const x=Math.max(-1,Math.min(1,samples[i]));v.setInt16(44+i*2,x<0?x*32768:x*32767,true)} return new Blob([buf],{type:'audio/wav'});
+const expression = expressionControls($('tts-expression'), count);
+const sample = 'A familiar voice can make a new idea feel simple. In this presentation, we’ll explore how a few small changes can make a difference.';
+const voices = {
+  'American English': 'af_heart af_alloy af_aoede af_bella af_jessica af_kore af_nicole af_nova af_river af_sarah af_sky am_adam am_echo am_eric am_fenrir am_liam am_michael am_onyx am_puck am_santa',
+  'Australian English': Object.keys(australianVoices).join(' '),
+  'British English': 'bf_emma bf_isabella bf_alice bf_lily bm_george bm_lewis bm_daniel bm_fable'
+};
+for (const [accent, ids] of Object.entries(voices)) {
+  const group = document.createElement('optgroup');
+  group.label = accent;
+  for (const id of ids.split(' ')) {
+    const name = id.slice(3, 4).toUpperCase() + id.slice(4);
+    group.append(new Option(name + ' · ' + accent, id));
+  }
+  $('voice').append(group);
 }
+
+let cues = [];
+let activeCue = -1;
+let fileName = '';
+let worker;
+let busy = false;
+let previewUrl;
+const previewPlayer = $('preview-audio');
+previewPlayer.onplay = () => $('player').pause();
+$('player').addEventListener('play', () => previewPlayer.pause());
+const monitor = setupMonitor(highlightCue, message => status(message, true));
+
+const tracks = { voice: null, record: null };
+let source = 'voice';
+
+function displayTrack() {
+  const track = tracks[source];
+  cues = track?.cues ?? [];
+  fileName = track?.name ?? '';
+  renderCaptions();
+  if (track) monitor.load(track, fileName);
+  else monitor.clear();
+}
+
+setupRecorder({
+  publish(track) {
+    const sameAudio = track === tracks.record;
+    tracks.record = track;
+    if (source !== 'record') return;
+    if (!sameAudio) displayTrack();
+    else {
+      cues = track.cues;
+      renderCaptions();
+      highlightCue($('player').currentTime);
+    }
+  },
+  lockCapture(locked) {
+    for (const mode of ['voice', 'captions']) document.querySelector('[data-mode="' + mode + '"]').disabled = locked;
+    document.querySelector('.monitor').inert = locked;
+    if (locked) {
+      $('player').pause();
+      previewPlayer.pause();
+    }
+  },
+  review() { document.querySelector('[data-mode="captions"]').click(); }
+});
+
+function status(message = '', error = false) {
+  $('feedback').textContent = message;
+  $('feedback').classList.toggle('error', error);
+}
+function count() {
+  const text = $('text').value;
+  let words = 0;
+  let silence = 0;
+  for (const part of scriptParts(text)) {
+    if (part.text?.trim()) words += part.text.trim().split(/\s+/).length;
+    if (part.pause) silence += part.pause;
+  }
+  $('counter').textContent = text.length.toLocaleString('en-AU') + ' / 6,000';
+  const { emotion, intensity } = expression.settings();
+  const speed = Math.max(0.5, Math.min(2, Number($('speed').value) * delivery(emotion, intensity).pace));
+  $('estimate').textContent = '~' + Math.ceil(words / (2.5 * speed) + silence) + ' sec';
+}
+function replaceScript(text) {
+  if (text.length > $('text').maxLength) {
+    status('This script exceeds 6,000 characters. Import a shorter section.', true);
+    return;
+  }
+  $('text').value = text;
+  count();
+  status();
+  $('text').focus();
+}
+$('text').oninput = count;
+$('speed').oninput = () => {
+  $('speed-out').value = Number($('speed').value).toFixed(2) + '×';
+  count();
+};
+$('volume').oninput = () => { $('volume-out').value = $('volume').value + '%'; };
+$('insert-pause').onclick = () => {
+  const input = $('text');
+  const cursor = input.selectionEnd;
+  const marker = '[pause ' + $('pause-duration').value + 's]';
+  if (input.value.length + marker.length > input.maxLength) return status('Make room in the script before inserting a pause.', true);
+  input.setRangeText(marker, cursor, cursor, 'end');
+  input.focus();
+  count();
+};
+$('sample').onclick = () => replaceScript(sample);
+$('import-text').onclick = () => $('text-file').click();
+$('text-file').onchange = async event => {
+  const file = event.target.files[0];
+  event.target.value = '';
+  if (!file) return;
+  try {
+    if (file.size > 24000) throw new Error('Import a text file with up to 6,000 characters.');
+    replaceScript((await file.text()).trim());
+  } catch (error) { status(error.message, true); }
+};
+
+function connectOffice() {
+  globalThis.Office?.onReady?.(info => {
+    if (info.host === Office.HostType.PowerPoint) $('selection').hidden = false;
+  });
+}
+if (globalThis.Office) connectOffice();
+else document.querySelector('script[src*="appsforoffice"]').addEventListener('load', connectOffice);
+$('selection').onclick = () => {
+  Office.context.document.getSelectedDataAsync(Office.CoercionType.Text, { valueFormat: Office.ValueFormat.Unformatted }, result => {
+    if (result.status !== Office.AsyncResultStatus.Succeeded) return status(result.error.message, true);
+    const value = String(result.value || '').trim();
+    if (value) replaceScript(value);
+    else status('Select some slide text in PowerPoint first.');
+  });
+};
+
+for (const tab of document.querySelectorAll('[data-mode]')) {
+  tab.onclick = () => {
+    const mode = tab.dataset.mode;
+    if (mode !== 'captions' && mode !== source) {
+      previewPlayer.pause();
+      source = mode;
+      displayTrack();
+      status();
+    }
+    for (const button of document.querySelectorAll('[data-mode]')) {
+      const selected = button === tab;
+      button.classList.toggle('active', selected);
+      button.setAttribute('aria-pressed', String(selected));
+      $(button.dataset.mode + '-panel').hidden = !selected;
+    }
+  };
+}
+
+function highlightCue(time) {
+  const next = cues.findIndex(cue => time >= cue.start && time < cue.end);
+  if (next === activeCue) return;
+  $('cues').children[activeCue]?.classList.remove('current');
+  $('cues').children[next]?.classList.add('current');
+  activeCue = next;
+}
+function renderCaptions() {
+  activeCue = -1;
+  if (!cues.length) {
+    $('caption-results').hidden = true;
+    $('cues').replaceChildren();
+    $('caption-hint').textContent = source === 'record' ? 'Record or open audio in Record audio to generate captions with Whisper.' : 'Generate a voiceover to create captions timed to your narration.';
+    return;
+  }
+  $('caption-hint').textContent = 'Select a timestamp to hear the narration. Edit the caption text before exporting.';
+  $('caption-results').hidden = false;
+  $('cues').replaceChildren(...cues.map((cue, index) => {
+    const row = document.createElement('div');
+    row.className = 'cue';
+    const time = document.createElement('button');
+    time.textContent = clock(cue.start) + ' – ' + clock(cue.end);
+    time.setAttribute('aria-label', 'Play from caption ' + (index + 1));
+    time.onclick = () => monitor.audition(cue.start);
+    const edit = document.createElement('textarea');
+    edit.rows = 2;
+    edit.value = cue.text;
+    edit.setAttribute('aria-label', 'Caption ' + (index + 1));
+    edit.oninput = () => { cue.text = edit.value; };
+    row.append(time, edit);
+    return row;
+  }));
+}
+$('export-captions').onclick = () => {
+  const blank = cues.findIndex(cue => !cue.text.trim());
+  if (blank >= 0) {
+    $('cues').children[blank].querySelector('textarea').focus();
+    return status('Enter text for caption ' + (blank + 1) + ' before exporting.', true);
+  }
+  const format = $('format').value;
+  const blob = new Blob([captionsFile(cues, format)], { type: format === 'VTT' ? 'text/vtt;charset=utf-8' : 'application/x-subrip;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = fileName + '.' + format.toLowerCase();
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  status('Caption file exported.');
+};
+
+function generating(value) {
+  busy = value;
+  document.querySelector('[data-mode=record]').disabled = value;
+  $('generate').innerHTML = icon(value ? 'cancel' : 'wave') + (value ? 'Cancel generation' : 'Generate voiceover');
+  for (const id of ['voice', 'speed', 'pitch', 'tts-expression', 'volume', 'fade-in', 'fade-out', 'preview', 'text', 'sample', 'selection', 'import-text', 'insert-pause', 'pause-duration']) {
+    $(id).disabled = value;
+  }
+}
+function resetWorker() {
+  worker?.terminate();
+  worker = undefined;
+  generating(false);
+}
+function generate(preview) {
+  if (busy) {
+    resetWorker();
+    return status('Generation cancelled.');
+  }
+  const text = $('text').value.trim() || (preview ? sample : '');
+  if (!text) {
+    $('text').focus();
+    return status('Enter a script or choose Use sample to generate a voiceover.', true);
+  }
+  try {
+    previewPlayer.pause();
+    generating(true);
+    status('Starting the local voice engine…');
+    worker ??= new Worker(new URL('./synthesis.js', import.meta.url), { type: 'module' });
+    worker.onmessage = ({ data }) => {
+      if (data.type === 'progress') return status(data.message);
+      if (data.type === 'error') {
+        resetWorker();
+        return status('Generation failed. ' + data.message, true);
+      }
+      if (data.type === 'ready') {
+        if (preview) {
+          const previous = previewUrl;
+          previewUrl = URL.createObjectURL(data.blob);
+          previewPlayer.src = previewUrl;
+          previewPlayer.hidden = false;
+          if (previous) URL.revokeObjectURL(previous);
+          generating(false);
+          status('Voice preview ready.');
+          previewPlayer.play().catch(() => {});
+          return;
+        }
+        tracks.voice = { ...data, name: 'open-local-tts-' + $('voice').value.slice(3) + '-narration' };
+        if (source === 'voice') displayTrack();
+        generating(false);
+        status('Voiceover and captions are ready.');
+      }
+    };
+    worker.onerror = event => {
+      resetWorker();
+      status('The voice engine could not start. ' + (event.message || 'Reload and try again.'), true);
+    };
+    worker.postMessage({
+      ...expression.settings(), text, preview, voice: $('voice').value, speed: Number($('speed').value),
+      pitch: Number($('pitch').value), volume: Number($('volume').value),
+      fadeIn: Number($('fade-in').value), fadeOut: Number($('fade-out').value)
+    });
+  } catch (error) {
+    resetWorker();
+    status(error.message, true);
+  }
+}
+
+$('generate').onclick = () => generate(false);
+$('preview').onclick = () => generate(true);
