@@ -1,6 +1,6 @@
 # Sano Local.TTS
 
-Create English voiceovers and timed captions in your browser. The studio serves its own speech models and processes your scripts and audio on your device. [Open the studio](https://dskhanal.github.io/OpenLocalTTS/)
+Create English voiceovers and timed captions in your browser. The studio serves its own speech models and processes your scripts and audio on your device. [Open the studio](https://dskhanal.github.io/SanoLocalTTS/)
 
 ## Use the studio
 
