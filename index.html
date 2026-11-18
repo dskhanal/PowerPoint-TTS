@@ -37,17 +37,20 @@
     <p id="project-status" role="status" hidden></p>
     <div id="studio-editor">
     <section class="monitor" aria-label="Audio monitor">
-      <div class="monitor-head"><h2><i data-icon="wave"></i>Audio monitor</h2><span class="monitor-state"><i class="dot"></i><span id="monitor-state">Standby</span></span></div>
-      <div class="scope" id="scope"><canvas id="wave" aria-hidden="true"></canvas><input id="seek" type="range" min="0" max="1" step="any" value="0" aria-label="Seek audio" disabled></div>
-      <div class="ruler" aria-hidden="true" id="ruler"></div>
-      <div class="transport">
-        <button class="play" id="play" aria-label="Play audio" disabled><i data-icon="play"></i></button>
-        <span class="time"><span id="elapsed">00:00</span><span class="muted"> / </span><span class="muted" id="duration">00:00</span></span>
-        <span id="track-name">No audio loaded</span>
-        <button id="mute" class="mute" aria-label="Mute audio" aria-pressed="false" disabled><i data-icon="volume"></i></button>
-        <a id="download" class="export" aria-disabled="true"><i data-icon="download"></i>Export audio</a>
+      <div id="monitor-content">
+        <div class="monitor-head"><h2><i data-icon="wave"></i>Audio monitor</h2><span class="monitor-state"><i class="dot"></i><span id="monitor-state">Standby</span></span></div>
+        <div class="scope" id="scope"><canvas id="wave" aria-hidden="true"></canvas><input id="seek" type="range" min="0" max="1" step="any" value="0" aria-label="Seek audio" disabled></div>
+        <div class="ruler" aria-hidden="true" id="ruler"></div>
+        <div class="transport">
+          <button class="play" id="play" aria-label="Play audio" disabled><i data-icon="play"></i></button>
+          <span class="time"><span id="elapsed">00:00</span><span class="muted"> / </span><span class="muted" id="duration">00:00</span></span>
+          <span id="track-name">No audio loaded</span>
+          <button id="mute" class="mute" aria-label="Mute audio" aria-pressed="false" disabled><i data-icon="volume"></i></button>
+          <a id="download" class="export" aria-disabled="true"><i data-icon="download"></i>Export audio</a>
+        </div>
+        <audio id="player" preload="metadata"></audio>
       </div>
-      <audio id="player" preload="metadata"></audio>
+      <div id="monitor-loading" role="status" hidden><span class="loading-ring" aria-hidden="true"></span><span id="loading-label"></span></div>
     </section>
 
     <nav class="modes" aria-label="Studio tools">
@@ -63,7 +66,8 @@
         <p class="script-padding-note" id="script-pause-hint">Write between the pause markers. Edit or delete either marker to change the timing.</p>
         <div class="script-foot">
           <div class="pause-tools"><button class="subtle" id="insert-pause"><i data-icon="pause"></i>Insert pause</button>
-            <select id="pause-duration" aria-label="Pause duration"><option value="0.25">0.25 s</option><option value="0.5">0.5 s</option><option value="1" selected>1 s</option><option value="2">2 s</option><option value="5">5 s</option></select></div>
+            <select id="pause-duration" aria-label="Pause duration"><option value="0.25">0.25 s</option><option value="0.5">0.5 s</option><option value="1" selected>1 s</option><option value="2">2 s</option><option value="5">5 s</option></select>
+            <label class="autoplay-option"><input id="autoplay" type="checkbox">Auto-play after generation</label></div>
           <button class="subtle" id="import-text"><i data-icon="upload"></i>Import text</button><input type="file" id="text-file" accept=".txt,text/plain" hidden>
           <button class="subtle" id="selection" hidden>Get selected text</button>
         </div>

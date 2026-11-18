@@ -31,7 +31,12 @@ h1,h2,h3,p { margin: 0 }
 h1 { font-size: clamp(37px, 4vw, 54px); line-height: 1.13; font-weight: 650; letter-spacing: -.065em }
 h1 span { color: #77964c }
 .page-head p, .tool-card>p { margin-top: 8px; color: var(--muted); font-size: 15px }
-.monitor { overflow: hidden; border-radius: 15px; background: #1c221e; color: #edf1e7; box-shadow: 0 3px 8px #1723170d }
+.monitor { position: relative; overflow: hidden; border-radius: 15px; background: #1c221e; color: #edf1e7; box-shadow: 0 3px 8px #1723170d }
+#monitor-content[inert] { filter: blur(4px) }
+#monitor-loading { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; gap: 10px; background: #141b15a6; color: #fff; font-weight: 600 }
+.loading-ring { width: 20px; height: 20px; border: 2px solid #ffffff50; border-top-color: var(--lime); border-radius: 50%; animation: monitor-spin 850ms linear infinite }
+@keyframes monitor-spin { to { transform: rotate(1turn) } }
+@media (prefers-reduced-motion: reduce) { .loading-ring { animation: none } }
 .monitor-head { padding: 17px 23px 10px; display: flex; align-items: center; justify-content: space-between }
 h2, h3 { font-size: 19px; font-weight: 640; line-height: 1.3; letter-spacing: -.04em }
 .monitor-head h2 { display: flex; align-items: center; gap: 10px; font-size: 14px; letter-spacing: -.015em }
@@ -86,6 +91,9 @@ select { max-width: 100%; border: 1px solid #d5dace; border-radius: 7px; backgro
 #pitch { width: 100%; font-size: 13px; margin: 5px 0 14px }
 .script-foot, .render-actions { flex-wrap: wrap }
 .pause-tools, .render-actions, .fades { display: flex; align-items: center; gap: 8px }
+.pause-tools { flex-wrap: wrap }
+.autoplay-option { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; font-size: 12px }
+.autoplay-option input { margin: 0; accent-color: #637b47 }
 .pause-tools select { font: 11px var(--mono); padding: 5px }
 .audio-settings { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 10px }
 .audio-settings summary { cursor: pointer; font-size: 13px; font-weight: 600 }

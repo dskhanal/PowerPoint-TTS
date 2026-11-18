@@ -4,6 +4,7 @@ import { icon } from './icons.js';
 export function setupMonitor(onTime, onError) {
   const byId = id => document.getElementById(id);
   const player = byId('player');
+  const content = byId('monitor-content');
   const canvas = byId('wave');
   const play = byId('play');
   const seek = byId('seek');
@@ -86,6 +87,22 @@ export function setupMonitor(onTime, onError) {
   };
   new ResizeObserver(draw).observe(canvas);
   return {
+    setLoading(label) {
+      const busy = Boolean(label);
+      if (busy) player.pause();
+      content.inert = busy;
+      content.setAttribute('aria-busy', String(busy));
+      byId('loading-label').textContent = label;
+      byId('monitor-loading').hidden = !busy;
+    },
+    autoplay() {
+      const url = objectUrl;
+      player.play().catch(error => {
+        if (error.name !== 'AbortError' && url === objectUrl && !content.inert) {
+          onError('Voiceover ready. Select Play audio to listen.');
+        }
+      });
+    },
     load(result, name) {
       player.pause();
       track = result;
@@ -121,6 +138,7 @@ export function setupMonitor(onTime, onError) {
       playbackChanged();
     },
     audition(seconds) {
+      if (content.inert) return;
       player.currentTime = seconds;
       start();
     }

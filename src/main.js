@@ -252,7 +252,8 @@ $('export-captions').onclick = () => {
   status('Caption file exported.');
 };
 
-function generating(value) {
+function generating(value, preview = false) {
+  monitor.setLoading(value ? (preview ? 'Generating voice preview…' : 'Generating voiceover…') : '');
   busy = value;
   projectUI?.setBusy(busy || recorderBusy);
   document.querySelector('[data-mode=record]').disabled = value;
@@ -279,7 +280,7 @@ function generate(preview) {
   }
   try {
     previewPlayer.pause();
-    generating(true);
+    generating(true, preview);
     status('Starting the local voice engine…');
     worker ??= new Worker(new URL('./synthesis.js', import.meta.url), { type: 'module' });
     worker.onmessage = ({ data }) => {
@@ -304,6 +305,7 @@ function generate(preview) {
         if (source === 'voice') displayTrack();
         generating(false);
         status('Voiceover and captions are ready.');
+        if (source === 'voice' && autoplay.checked) monitor.autoplay();
       }
     };
     worker.onerror = event => {
@@ -320,6 +322,16 @@ function generate(preview) {
     status(error.message, true);
   }
 }
+
+const autoplay = $('autoplay');
+const autoplayKey = 'sano-local-tts.autoplay';
+try {
+  autoplay.checked = localStorage.getItem(autoplayKey) === 'true';
+} catch { /* Browser storage is optional. */ }
+autoplay.onchange = () => {
+  try { localStorage.setItem(autoplayKey, String(autoplay.checked)); }
+  catch { /* The checkbox still applies for this session. */ }
+};
 
 $('generate').onclick = () => generate(false);
 $('preview').onclick = () => generate(true);
