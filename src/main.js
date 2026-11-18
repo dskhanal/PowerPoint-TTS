@@ -1,8 +1,10 @@
 import { australianVoices } from './australian-voices.js';
 import { icon } from './icons.js';
-import { captionsFile, clock, scriptParts } from './audio.js';
+import { defaultVariation, validVariation, edgeSilence, narrationPlan, phraseSpeed } from './script-delivery.js';
+import { captionsFile, clock } from './audio.js';
 import { delivery, expressionControls } from './expression.js';
 import { setupRecorder } from './recording.js';
+import { setupProject } from './project-ui.js';
 import { setupMonitor } from './monitor.js';
 
 const $ = id => document.getElementById(id);
@@ -32,6 +34,9 @@ let activeCue = -1;
 let fileName = '';
 let worker;
 let busy = false;
+let recorderBusy = false;
+let projectUI;
+let pageRevision = 0;
 let previewUrl;
 const previewPlayer = $('preview-audio');
 previewPlayer.onplay = () => $('player').pause();
@@ -50,7 +55,8 @@ function displayTrack() {
   else monitor.clear();
 }
 
-setupRecorder({
+const recorder = setupRecorder({
+  onBusy(value) { recorderBusy = value; projectUI?.setBusy(busy || recorderBusy); },
   publish(track) {
     const sameAudio = track === tracks.record;
     tracks.record = track;
@@ -77,18 +83,40 @@ function status(message = '', error = false) {
   $('feedback').textContent = message;
   $('feedback').classList.toggle('error', error);
 }
+let variationSeed = 0;
+function variationSettings() {
+  return { volume: $('volume-variation').value, repeat: $('repeat-words').checked,
+    slow: $('slow-phrases').checked, seed: variationSeed };
+}
+
+function updateVariation() {
+  const variation = variationSettings();
+  $('shuffle-delivery').disabled = variation.volume === 'off' && !variation.repeat && !variation.slow;
+  count();
+}
+
+for (const id of ['volume-variation', 'repeat-words', 'slow-phrases']) $(id).onchange = updateVariation;
+$('shuffle-delivery').onclick = () => {
+  variationSeed = crypto.getRandomValues(new Uint32Array(1))[0];
+  count();
+  status('New variation selected. Preview or generate to hear it.');
+};
+
 function count() {
   const text = $('text').value;
-  let words = 0;
-  let silence = 0;
-  for (const part of scriptParts(text)) {
-    if (part.text?.trim()) words += part.text.trim().split(/\s+/).length;
-    if (part.pause) silence += part.pause;
-  }
   $('counter').textContent = text.length.toLocaleString('en-AU') + ' / 6,000';
   const { emotion, intensity } = expression.settings();
-  const speed = Math.max(0.5, Math.min(2, Number($('speed').value) * delivery(emotion, intensity).pace));
-  $('estimate').textContent = '~' + Math.ceil(words / (2.5 * speed) + silence) + ' sec';
+  const baseSpeed = Number($('speed').value) * delivery(emotion, intensity).pace;
+  try {
+    const plan = text.trim() ? narrationPlan(text, false, variationSettings()) : [];
+    let seconds = plan.length ? 2 * edgeSilence : 0;
+    for (const part of plan) {
+      seconds += part.pause ?? part.text.split(/\s+/).length / (2.5 * phraseSpeed(baseSpeed, part));
+    }
+    $('estimate').textContent = '~' + Math.ceil(seconds) + ' sec';
+  } catch {
+    $('estimate').textContent = '— sec';
+  }
 }
 function replaceScript(text) {
   if (text.length > $('text').maxLength) {
@@ -123,7 +151,9 @@ $('text-file').onchange = async event => {
   if (!file) return;
   try {
     if (file.size > 24000) throw new Error('Import a text file with up to 6,000 characters.');
-    replaceScript((await file.text()).trim());
+    const revision = pageRevision;
+    const text = await file.text();
+    if (pageRevision === revision) replaceScript(text.trim());
   } catch (error) { status(error.message, true); }
 };
 
@@ -135,7 +165,9 @@ function connectOffice() {
 if (globalThis.Office) connectOffice();
 else document.querySelector('script[src*="appsforoffice"]').addEventListener('load', connectOffice);
 $('selection').onclick = () => {
+  const revision = pageRevision;
   Office.context.document.getSelectedDataAsync(Office.CoercionType.Text, { valueFormat: Office.ValueFormat.Unformatted }, result => {
+    if (revision !== pageRevision) return;
     if (result.status !== Office.AsyncResultStatus.Succeeded) return status(result.error.message, true);
     const value = String(result.value || '').trim();
     if (value) replaceScript(value);
@@ -212,9 +244,10 @@ $('export-captions').onclick = () => {
 
 function generating(value) {
   busy = value;
+  projectUI?.setBusy(busy || recorderBusy);
   document.querySelector('[data-mode=record]').disabled = value;
   $('generate').innerHTML = icon(value ? 'cancel' : 'wave') + (value ? 'Cancel generation' : 'Generate voiceover');
-  for (const id of ['voice', 'speed', 'pitch', 'tts-expression', 'volume', 'fade-in', 'fade-out', 'preview', 'text', 'sample', 'selection', 'import-text', 'insert-pause', 'pause-duration']) {
+  for (const id of ['voice', 'speed', 'pitch', 'tts-expression', 'variation-controls', 'volume', 'fade-in', 'fade-out', 'preview', 'text', 'sample', 'selection', 'import-text', 'insert-pause', 'pause-duration']) {
     $(id).disabled = value;
   }
 }
@@ -267,7 +300,7 @@ function generate(preview) {
       status('The voice engine could not start. ' + (event.message || 'Reload and try again.'), true);
     };
     worker.postMessage({
-      ...expression.settings(), text, preview, voice: $('voice').value, speed: Number($('speed').value),
+      ...expression.settings(), variation: variationSettings(), text, preview, voice: $('voice').value, speed: Number($('speed').value),
       pitch: Number($('pitch').value), volume: Number($('volume').value),
       fadeIn: Number($('fade-in').value), fadeOut: Number($('fade-out').value)
     });
@@ -279,3 +312,64 @@ function generate(preview) {
 
 $('generate').onclick = () => generate(false);
 $('preview').onclick = () => generate(true);
+
+const settingIds = ['voice', 'speed', 'pitch', 'volume', 'fade-in', 'fade-out', 'pause-duration', 'format'];
+
+function snapshotPage() {
+  const settings = Object.fromEntries(settingIds.map(id => [id, $(id).value]));
+  return {
+    script: $('text').value, settings: { ...settings, ...expression.settings(), variation: variationSettings() },
+    source, mode: document.querySelector('[data-mode][aria-pressed=true]').dataset.mode,
+    voice: tracks.voice, record: tracks.record, recorder: recorder.snapshot()
+  };
+}
+
+function restorePage(page) {
+  pageRevision++;
+  previewPlayer.pause();
+  previewPlayer.removeAttribute('src');
+  previewPlayer.load();
+  previewPlayer.hidden = true;
+  if (previewUrl) URL.revokeObjectURL(previewUrl);
+  previewUrl = undefined;
+  $('text').value = page.script;
+  for (const id of settingIds) $(id).value = page.settings[id];
+  const variation = page.settings.variation ?? defaultVariation;
+  variationSeed = variation.seed;
+  $('volume-variation').value = variation.volume;
+  $('repeat-words').checked = variation.repeat;
+  $('slow-phrases').checked = variation.slow;
+  updateVariation();
+  expression.restore(page.settings);
+  $('speed').oninput();
+  $('volume').oninput();
+  tracks.voice = page.voice;
+  tracks.record = page.record;
+  source = page.source;
+  recorder.restore(page.record, page.recorder);
+  displayTrack();
+  document.querySelector('[data-mode="' + page.mode + '"]').click();
+  status();
+}
+
+function validPageSettings(settings, savedRecorder) {
+  const styles = [...$('tts-expression').querySelector('select').options].map(option => option.value);
+  const validExpression = value => value && styles.includes(value.emotion) && Number.isInteger(value.intensity) && value.intensity >= 0 && value.intensity <= 100;
+  if (settings?.variation !== undefined && !validVariation(settings.variation)) return false;
+  if (!validExpression(settings) || !validExpression(savedRecorder.expression)) return false;
+  const [name, amount] = String(savedRecorder.appliedStyle).split('-');
+  if (savedRecorder.appliedStyle !== 'Neutral' && !(styles.includes(name) && Number(amount) > 0 && Number(amount) <= 100 && savedRecorder.appliedStyle === name + '-' + Number(amount))) return false;
+  return settingIds.every(id => {
+    const control = $(id);
+    const value = settings[id];
+    if (typeof value !== 'string' || !value.length) return false;
+    if (control.options) return [...control.options].some(option => option.value === value);
+    const n = Number(value);
+    return Number.isFinite(n) && n >= Number(control.min) && n <= Number(control.max);
+  });
+}
+
+projectUI = setupProject({
+  snapshot: snapshotPage, restore: restorePage, validateSettings: validPageSettings,
+  stopPlayback() { $('player').pause(); previewPlayer.pause(); }
+});

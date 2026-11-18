@@ -10,11 +10,23 @@ Type or paste an English script, import a plain-text file, or choose **Use sampl
 
 Place the cursor in your script, choose a duration and select **Insert pause**. For example, `Welcome.[pause 2s]Let’s begin.` inserts two seconds of silence. An ellipsis (`...` or `…`) inserts one second. Caption cues stop for the pause and resume with the next spoken phrase.
 
+Every newly generated full script includes two seconds of silence before and after the narration. Scripted pauses add to those gaps. Captions begin with the spoken audio and finish before the closing silence. Voice previews play immediately.
+
+Under **Natural delivery**, choose gentle volume dips, louder accents, or a mix. You can also repeat an occasional word and slow selected phrases. These effects start off. The source script stays editable, and captions include any words repeated in the audio. **Shuffle variation** chooses a new arrangement. Preview and full generation use the same arrangement, which is saved per page in the project JSON.
+
 Choose an **Emotion** (Calm, Cheerful, Serious or Excited) and adjust **Intensity**. These local audio presets shape pitch, vocal brightness and syllable emphasis. In text-to-speech they also adjust speaking pace within the 0.5× to 2× range. Neutral and 0% intensity use the voice’s ordinary delivery. Preview a phrase to hear how the effect suits the speaker and script.
 
 Choose **Vocal pitch** to raise or lower the voice by two or four semitones while preserving its pace. **Volume and fades** adjusts the exported level and the fade at each end of the track. **Preview voice** plays the first spoken phrase with your settings, or a sample if the script is empty. Choose **Generate voiceover** to apply edits to the full WAV and captions.
 
 Play or seek the finished narration in the audio monitor and choose **Export audio** for a mono WAV (22.05 kHz for Australian voices, 24 kHz for Kokoro voices). Open **Captions** to play from a cue, edit its wording and export an SRT or WebVTT file. Each cue uses the duration of its generated phrase. Export the files before closing the studio.
+
+## Multi-page projects
+
+Choose **Project mode** to keep the current studio work as the first page. Name the project and use **Add page** to start another script or recording in the same window. Select a page to return to its editor. **Move earlier** and **Move later** set the order of the pages in the project and downloads.
+
+**Save JSON** downloads one self-contained project file with the scripts, voice settings, generated and recorded audio, original takes, and edited timed captions. **Open JSON** restores the pages and the active editor from that file. Save before closing the studio.
+
+**Download all** opens a page-by-page inventory. **Download project ZIP** includes the project JSON and a numbered folder for every page. Each folder contains its script and any available narration or recording WAV, SRT and WebVTT files. A page with a draft script can be exported before audio generation.
 
 ## Recording and local Whisper captions
 

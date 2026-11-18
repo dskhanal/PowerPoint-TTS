@@ -1,4 +1,5 @@
 const paths = {
+  pages: '<rect x="7" y="6" width="14" height="15" rx="2"/><path d="M4 17H3V3h13v1"/>',
   mic: '<rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 11a7 7 0 0 0 14 0m-7 7v4m-4 0h8"/>',
   stop: '<rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor"/>',
   cancel: '<path d="m6 6 12 12m0-12L6 18"/>',

@@ -37,6 +37,7 @@ export function expressionControls(container, onChange) {
   select.onchange = slider.oninput = update;
   return {
     settings: () => ({ emotion: select.value, intensity: Number(slider.value) }),
+    restore({ emotion, intensity: strength }) { select.value = emotion; slider.value = strength; update(); },
     reset() { select.value = 'Neutral'; slider.value = 70; update(); }
   };
 }

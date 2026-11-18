@@ -134,3 +134,23 @@ footer span:first-child { display: inline-flex; align-items: center; gap: 6px }f
 .intensity { margin-top: 10px }.intensity output { float: right; font: 11px var(--mono); color: var(--muted) }
 .intensity input[type=range] { display: block; width: 100%; margin: 7px 0 0; accent-color: #637b47 }
 #take-expression { max-width: 355px; margin-top: 20px }
+
+.project-heading, .project-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap }
+.project-tools { min-width: 0; margin: 0 0 18px }
+.project-tools label { min-width: 0; font-size: 12px; font-weight: 650; color: var(--muted) }
+.project-tools input:not([type=file]) { display: block; margin-top: 4px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink); background: white; width: 100%; font: inherit; font-size: 14px }
+.page-nav { display: flex; gap: 6px; overflow-x: auto; padding: 9px 2px; margin: 13px 0; border-block: 1px solid var(--line) }
+.page-nav button { flex: none; max-width: 220px; overflow: hidden; display: block; white-space: nowrap; text-overflow: ellipsis; padding: 7px 12px; border-radius: 6px; font-size: 13px }
+.page-nav button[aria-current=page] { background: #e3f2d1; color: #344a24 }
+.project-tools .subtle:disabled { opacity: .4 }#project-downloads>p,#project-status { font-size: 13px; color: var(--muted) }
+#export-pages { padding-left: 24px }#export-pages li { padding: 8px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere }
+#export-pages small { display: block; color: var(--muted) }#project-status { margin: 10px 0 }
+@media(max-width: 520px) { .project-tools .actions { gap: 6px }.project-tools .secondary,.project-heading .secondary { font-size: 12px; min-height: 34px; padding: 6px 9px }.project-heading { align-items: start } }
+
+.variation-controls { margin: 0; padding: 0; border: 0; min-width: 0 }
+.variation-controls select { display: block; width: 100%; margin: 5px 0 8px; font-size: 13px }
+.variation-controls label:has(input) { display: flex; align-items: center; gap: 7px; padding: 4px 0; font-weight: 500 }
+.variation-controls input[type=checkbox] { margin: 0; accent-color: #637b47 }
+.variation-controls button:disabled { opacity: .45 }
+
+.script-padding-note { margin-top: 8px; color: var(--muted); font-size: 12px }

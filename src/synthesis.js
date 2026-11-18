@@ -1,7 +1,8 @@
 import { KokoroTTS } from 'kokoro-js';
 import { env } from '@huggingface/transformers';
 import { configureWasm } from './wasm.js';
-import { narrationPlan, renderNarration } from './render.js';
+import { renderNarration } from './render.js';
+import { narrationPlan } from './script-delivery.js';
 
 env.allowLocalModels = false;
 configureWasm(env);
@@ -38,7 +39,7 @@ async function loadEngine(voice) {
 
 self.onmessage = async ({ data }) => {
   try {
-    const plan = narrationPlan(data.text, data.preview);
+    const plan = narrationPlan(data.text, data.preview, data.variation);
     const engine = await loadEngine(data.voice);
     const result = await renderNarration(engine, plan, data, progress);
     self.postMessage({ type: 'ready', ...result });

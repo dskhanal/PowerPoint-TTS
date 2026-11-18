@@ -2,7 +2,7 @@ import { wavBlob, waveform, clock } from './audio.js';
 import { expressionControls } from './expression.js';
 import { icon } from './icons.js';
 
-export function setupRecorder({ publish, lockCapture, review }) {
+export function setupRecorder({ publish, lockCapture, review, onBusy }) {
   const $ = id => document.getElementById(id);
   const button = $('record-button');
   const recognize = $('recognize');
@@ -73,6 +73,7 @@ export function setupRecorder({ publish, lockCapture, review }) {
   }
   function state(next) {
     phase = next;
+    onBusy(next !== 'idle');
     updateExpression();
     const recording = next === 'recording';
     const requesting = next === 'requesting';
@@ -242,4 +243,19 @@ export function setupRecorder({ publish, lockCapture, review }) {
     worker = undefined;
     state('idle');
   });
+
+  return {
+    snapshot() {
+      return { original: originalTake ?? null, appliedStyle, expression: expression.settings() };
+    },
+    restore(take, saved) {
+      lastTake = take;
+      originalTake = saved.original;
+      appliedStyle = saved.appliedStyle;
+      expression.restore(saved.expression);
+      $('record-time').textContent = clock(take?.duration ?? 0);
+      state('idle');
+      message(take ? 'Recording available in the audio monitor.' : 'Microphone off.');
+    }
+  };
 }

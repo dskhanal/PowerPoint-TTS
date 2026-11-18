@@ -16,8 +16,26 @@
     <span class="local"><i class="dot"></i> Local workspace</span>
   </div></header>
   <main>
-    <header class="page-head"><h1>Voiceover studio<span>.</span></h1>
+    <header class="page-head"><div class="project-heading"><h1>Voiceover studio<span>.</span></h1><button id="project-mode" class="secondary" aria-expanded="false" aria-controls="project-tools"><i data-icon="pages"></i><span id="project-mode-label">Project mode</span></button></div>
       <p>Generate voiceovers or record your own audio with timed captions.</p></header>
+    <fieldset id="project-tools" class="card project-tools" aria-label="Project controls" hidden>
+      <div class="project-bar"><label>Project name<input id="project-name" value="Untitled project" maxlength="100"></label>
+        <div class="actions"><button id="new-project" class="secondary">New project</button><button id="open-project" class="secondary">Open JSON</button><input type="file" id="project-file" accept=".json,application/json" hidden>
+          <button id="save-project" class="secondary">Save JSON</button><button id="show-downloads" class="secondary"><i data-icon="download"></i>Download all</button></div>
+      </div>
+      <nav aria-label="Project pages" class="page-nav" id="page-nav"></nav>
+      <div class="project-bar"><label>Page name<input id="page-name" maxlength="100"></label>
+        <div class="actions"><button id="add-page" class="secondary">Add page</button><button id="move-before" class="subtle">Move earlier</button><button id="move-after" class="subtle">Move later</button><button id="remove-page" class="subtle">Remove page</button></div>
+      </div>
+    </fieldset>
+    <section id="project-downloads" class="card" aria-label="Project downloads" hidden>
+      <div class="card-head"><h2>Download all pages</h2><button id="back-editor" class="text-action">Back to editor</button></div>
+      <p>Download one ZIP with the project JSON, page scripts, and each available WAV and caption file.</p>
+      <ol id="export-pages"></ol>
+      <button id="download-project" class="primary"><i data-icon="download"></i>Download project ZIP</button>
+    </section>
+    <p id="project-status" role="status" hidden></p>
+    <div id="studio-editor">
     <section class="monitor" aria-label="Audio monitor">
       <div class="monitor-head"><h2><i data-icon="wave"></i>Audio monitor</h2><span class="monitor-state"><i class="dot"></i><span id="monitor-state">Standby</span></span></div>
       <div class="scope" id="scope"><canvas id="wave" aria-hidden="true"></canvas><input id="seek" type="range" min="0" max="1" step="any" value="0" aria-label="Seek audio" disabled></div>
@@ -42,6 +60,7 @@
       <div class="card script-card"><div class="card-head"><h2><i data-icon="text"></i>Script</h2><button class="text-action" id="sample"><i data-icon="spark"></i>Use sample</button></div>
         <div class="script-box"><textarea id="text" maxlength="6000" aria-label="Narration script" placeholder="Write or paste your narration here…"></textarea>
         <div class="script-meta"><span><i data-icon="clock"></i><span id="estimate">~0 sec</span></span><span id="counter">0 / 6,000</span></div></div>
+        <p class="script-padding-note">Full scripts include 2 seconds of silence at each end.</p>
         <div class="script-foot">
           <div class="pause-tools"><button class="subtle" id="insert-pause"><i data-icon="pause"></i>Insert pause</button>
             <select id="pause-duration" aria-label="Pause duration"><option value="0.25">0.25 s</option><option value="0.5">0.5 s</option><option value="1" selected>1 s</option><option value="2">2 s</option><option value="5">5 s</option></select></div>
@@ -57,6 +76,14 @@
         <div class="speed-label"><label for="speed">Speed</label><output for="speed" id="speed-out">1.00×</output></div>
         <input type="range" id="speed" min="0.5" max="2" step="0.05" value="1">
         <div class="range-labels"><span>0.5×</span><span>2.0×</span></div>
+        <details class="audio-settings"><summary>Natural delivery</summary>
+          <fieldset id="variation-controls" class="variation-controls">
+            <label>Volume variation<select id="volume-variation"><option value="off">Off</option><option value="dip">Gentle dips</option><option value="lift">Louder accents</option><option value="mixed">Mix dips and accents</option></select></label>
+            <label><input type="checkbox" id="repeat-words"> Occasionally repeat a word</label>
+            <label><input type="checkbox" id="slow-phrases"> Slow down selected phrases</label>
+            <button class="subtle" id="shuffle-delivery" disabled>Shuffle variation</button>
+          </fieldset>
+        </details>
         <details class="audio-settings"><summary>Volume and fades</summary>
           <div class="speed-label"><label for="volume">Output volume</label><output id="volume-out" for="volume">100%</output></div>
           <input type="range" id="volume" min="0" max="200" step="5" value="100">
@@ -89,6 +116,7 @@
       <div id="caption-results" hidden><div class="caption-toolbar"><h3>Transcript</h3><div class="actions"><select id="format" aria-label="Caption export format"><option>SRT</option><option>VTT</option></select><button class="secondary" id="export-captions"><i data-icon="download"></i>Export captions</button></div></div><div id="cues"></div></div>
     </section>
     <div id="feedback" role="status" aria-live="polite"></div>
+    </div>
     <footer><span><i data-icon="shield"></i>Audio is processed on your device.</span><span>Open Local.TTS</span></footer>
   </main>
   <script type="module" src="/src/main.js"></script>
